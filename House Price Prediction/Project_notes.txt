@@ -1,0 +1,142 @@
+
+
+> Pandas as pd > 1) DataFrame = pd.read_csv('name_of_file.csv') = To read CSV file
+                 
+                 2) DataFrame.head(n) = Shows first n rows from DataFrame = default n = 5 
+
+                 3) DataFrame.shape() = gives output = (no. of rows,no. of columns) 
+
+                 4) DataFrame.groupby('column_X')['column_X'].agg('count') = gives count of every possible value of column_X.
+                    Ex.
+                        area_type        count of that value         
+
+                        BuiltUp_Area --- 241
+                        Carpet_Area ---- 87
+                        Plot_Area ------ 2025
+
+                 5) DataFrame2=DataFrame.drop(['area_type','availability','society'],axis='columns')
+
+                    Assumes that these particular columns basically features are not much important in terms of price prediction
+                    These features can be ignored for now.
+                    So we drop that particular columns (features) from our DataFrame . 
+
+                    DataFrame2 is out new DataFrame.
+
+Now we need to clean our Data.
+
+> Data Cleaning > 1) DataFrame2.isnull().sum()
+
+                     Shows count of columns_cells which has NA value
+                     Ex. 
+                        bathrooms = 73 null values are there
+                        balcony = 23 null values are there 
+
+                  Now we can replace this values by mean,median or mode OR we can drop this rows from our DataFrame
+
+                  2.1) --> Droping NA value rows
+                   
+                        DataFrame3 = DataFrame2.dropna()  
+                  
+                  2.2) --> Replacing NA values with Median
+
+                        dataFrame2['balcony'] = dataFrame2['balcony'].fillna(dataFrame2['balcony'].median())
+
+                        This will replace all NA values in 'balcony' column with column's Median.
+
+                   3) Finding Unique values from specific column
+
+                        DataFrame3['column_X'].unique()
+
+                        This will return all unique values from  column_X.
+
+                   4) Now we get rooms values as 2BHK , 4 Bedrooms etc.
+                      here we need to format this in 1 common unit.
+
+                      So we create new row in which only number of rooms are discribed without any unit.
+
+                      here we apply lambda function to every value in that column.
+
+                      DataFrame3['BHK'] = DataFrame3['size'].apply(lambda x: int(x.split(' ')[0]))
+
+                      function lambda x: int(x.split(' ')[0]) 
+
+                      This function will split value by space and return integer of 1st value(no. of rooms)
+
+                   5) Now Total Square feet for some rows is provided in range i.e. 2500-3000.
+                      for this type of data points, we need to convert them in some specific INTEGER/FLOAT value 
+
+                      dataFrame3[~dataFrame3['total_sqft'].apply(is_float)]
+
+                      This will return all values in column ['total_sqft] which are not ( ~ ) FLOAT
+                      here is_float is a function which return True or False according to input value.
+
+                      df4=dataFrame3.copy()
+                      df4['total_sqft'] = dataFrame3['total_sqft'].apply(convert_sqft_to_num)
+
+                      This above code will create a copy of dataFrame3
+                      2nd line : will apply convert_sqft_to_num function to 'total_sqft' column values.
+
+                      so now values like > 1800 - 2000 will be 1900 (average)
+                   
+                   6) Converting different units in to single common unit.
+
+                        def unit_in_sqmt(x):
+                            x=str(x)
+                            if 'Sq. Meter' in x:
+                                x=x[:-9]
+                                return float(int(float(x)*10.76))
+                            elif 'Sq. Yards' in x:
+                                x=x[:-9]
+                                return float(int(float(x)*9))
+                            elif 'Acres' in x:
+                                x=x[:-5]
+                                return float(int(float(x)*43560))
+                            elif 'Cents' in x:
+                                x=x[:-5]
+                                return float(int(float(x)*435.56))
+                            else:
+                                return x
+
+                   7) Now creating a new column 'price per sqft'.
+
+                        price per sqft = price*100000/total_sqft
+
+                   8) Now there are around 1300+ unique locations in location column.
+                      thats too much , so here we can reduce it by applying 'Other' tag to locations which occurs less than 10 times in out DataFrame.
+
+                      df8.location=df8.location.apply(lambda x:'other' if x in loc_less_than_10 else x)
+
+                      This will change all location_tags to 'other' which occurs less than 10 times.
+
+> Outliers Removal > 1) Function Outliers
+                        def outliers(df,ft):
+                            Q1 = df[ft].quantile(0.25)
+                            Q3 = df[ft].quantile(0.75)
+                            #print('q1',Q1,'q3',Q3)
+                            IQR = Q3-Q1
+
+                            lower = Q1-1.5*IQR
+                            upper = Q3+1.5*IQR
+
+                            #print('low',lower,'up',upper)
+
+                            ls = df.index [ (df[ft]< lower) | (df[ft] > upper) ]
+
+                            return ls
+                            
+                         This will return list of outlier index of given DataFrame df and feature ft.
+                         
+                     2) Plotting Boxplot for Outliers.This function will boxplot for given Dataframe df and features ft.
+                     
+                         def plt_boxplot(df,ft):
+                             df.boxplot(column=[ft])
+                             plt.grid(False)
+                             plt.show()
+                             
+                     3) Remove different outliers of different features.
+                        
+                        i.e. total_sqft/BHK < 300 will be outliers coz there is no bedroom < 300 sqft.
+                        
+                        
+                        
+                        
